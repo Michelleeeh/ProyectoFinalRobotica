@@ -1,24 +1,3 @@
-<<<<<<< Updated upstream
-from controller import Robot
-from mapa import cargar_mapa, MAPA_SIMPLE, MAPA_COMPLEJO
-from astar import astar
-
-robot = Robot()
-TIME_STEP = 64
-
-ENTORNO = "simple"   # "simple" o "complejo"
-
-if ENTORNO == "simple":
-    grid, inicio, meta = cargar_mapa(MAPA_SIMPLE)
-
-elif ENTORNO == "complejo":
-    grid, inicio, meta = cargar_mapa(MAPA_COMPLEJO)
-
-else:
-    raise ValueError("Entorno inválido")
-
-ruta = astar(grid, inicio, meta)
-=======
 """
 epuck_controller.py
 
@@ -73,7 +52,6 @@ ARRIVAL_THRESHOLD = 0.08
 OBSTACLE_THRESHOLD = 150 # Incrementado para evitar falsos positivos por paredes lejanas
 TOLERANCIA_ANGULAR = 0.05 # (ej. 0.05 rads son ~2.8 grados)
 LOG_FILE = "ruta_log.csv"
->>>>>>> Stashed changes
 
 # ═══════════════════════════════════════════════════════════════════════════════
 # CONVERSIÓN DE COORDENADAS
@@ -128,16 +106,6 @@ print(f"Inicio (grid) : {INICIO_GRID}  →  mundo {celda_a_mundo(*INICIO_GRID)}"
 print(f"Meta   (grid) : {META_GRID}    →  mundo {celda_a_mundo(*META_GRID)}")
 
 if ruta is None:
-<<<<<<< Updated upstream
-    print("No existe ruta.")
-else:
-    print("Longitud:", len(ruta))
-    for punto in ruta:
-        print(punto)
-
-while robot.step(TIME_STEP) != -1:
-    pass
-=======
     print("No existe ruta entre inicio y meta. Revisa la grilla de obstáculos.")
     exit(1)
 
@@ -318,4 +286,3 @@ while robot.step(TIME_STEP) != -1:
 
 detener()
 guardar_log()
->>>>>>> Stashed changes
