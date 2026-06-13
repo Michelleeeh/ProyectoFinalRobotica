@@ -1,4 +1,16 @@
-MAPA_RAW = [
+MAPA_SIMPLE = [
+    "S0100100",
+    "00001100",
+    "11000000",
+    "10000011",
+    "00011000",
+    "00010000",
+    "01000110",
+    "0110000M"
+]
+
+
+MAPA_COMPLEJO = [
     "S000000011111110",
     "0000000000000000",
     "0011101110111100",
@@ -16,12 +28,13 @@ MAPA_RAW = [
     "0111000010000100",
     "100000000011000M"
 ]
-def cargar_mapa():
+def cargar_mapa(mapa_raw):
+
     grid = []
     inicio = None
     meta = None
 
-    for fila, linea in enumerate(MAPA_RAW):
+    for fila, linea in enumerate(mapa_raw):
 
         nueva_fila = []
 
