@@ -1,0 +1,187 @@
+#VRML_SIM R2025a utf8
+
+EXTERNPROTO "https://raw.githubusercontent.com/cyberbotics/webots/R2025a/projects/objects/backgrounds/protos/TexturedBackground.proto"
+EXTERNPROTO "https://raw.githubusercontent.com/cyberbotics/webots/R2025a/projects/objects/backgrounds/protos/TexturedBackgroundLight.proto"
+EXTERNPROTO "https://raw.githubusercontent.com/cyberbotics/webots/R2025a/projects/objects/floors/protos/RectangleArena.proto"
+EXTERNPROTO "https://raw.githubusercontent.com/cyberbotics/webots/R2025a/projects/objects/tables/protos/Table.proto"
+EXTERNPROTO "https://raw.githubusercontent.com/cyberbotics/webots/R2025a/projects/robots/gctronic/e-puck/protos/E-puck.proto"
+
+WorldInfo {
+}
+Viewpoint {
+  orientation -0.5790328602240825 0.5775870743643333 0.5754251630820191 2.099450152647159
+  position -0.023976051971368935 0.0928834778042525 5.2243498142540075
+}
+TexturedBackground {
+}
+TexturedBackgroundLight {
+}
+RectangleArena {
+  floorSize 2 2
+}
+Table {
+  translation -0.74 0.379999 0
+  rotation 0 0 1 -1.5707953071795862
+  size 0.23 0.45 0.15
+}
+Table {
+  translation 0.25 0.629999 0
+  rotation 0 0 1 -1.5707953071795862
+  name "table(1)"
+  size 0.23 0.45 0.15
+}
+Table {
+  translation -0.01 -0.120001 0
+  rotation 0 0 1 -1.5707953071795862
+  name "table(2)"
+  size 0.23 0.45 0.15
+}
+Table {
+  translation 0.73 0.129999 0
+  rotation 0 0 1 -1.5707953071795862
+  name "table(5)"
+  size 0.23 0.45 0.15
+}
+Table {
+  translation -0.5 -0.860001 0
+  rotation 0 0 1 -1.5707953071795862
+  name "table(3)"
+  size 0.23 0.45 0.15
+}
+Table {
+  translation 0.47 -0.620001 0
+  rotation 0 0 1 -1.5707953071795862
+  name "table(4)"
+  size 0.23 0.45 0.15
+}
+Shape {
+  appearance PBRAppearance {
+    baseColor 1 0 0
+  }
+}
+Shape {
+}
+Solid {
+  translation -0.88 0.87 0
+  children [
+    Shape {
+      appearance PBRAppearance {
+        baseColor 0 1 0
+        emissiveColor 0 1 0
+      }
+      geometry Box {
+        size 0.2 0.2 0.01
+      }
+    }
+  ]
+}
+Solid {
+  translation 0.88 -0.88 0
+  children [
+    Shape {
+      appearance PBRAppearance {
+        baseColor 1 0 0
+        emissiveColor 1 0 0
+      }
+      geometry Box {
+        size 0.2 0.2 0.01
+      }
+    }
+  ]
+  name "solid(1)"
+}
+Solid {
+  translation -0.89 0.13 0
+  children [
+    Shape {
+      appearance PBRAppearance {
+        baseColor 0.12549 0.12549 0.12549
+        emissiveColor 0.0745098 0.0745098 0.0745098
+      }
+      geometry Cylinder {
+        height 0.15
+        radius 0.06
+      }
+    }
+  ]
+  name "solid(2)"
+}
+Solid {
+  translation -0.38 0.87 0
+  children [
+    Shape {
+      appearance PBRAppearance {
+        baseColor 0.12549 0.12549 0.12549
+        emissiveColor 0.0745098 0.0745098 0.0745098
+      }
+      geometry Cylinder {
+        height 0.15
+        radius 0.06
+      }
+    }
+  ]
+  name "solid(5)"
+}
+Solid {
+  translation 0.36 0.87 0
+  children [
+    Shape {
+      appearance PBRAppearance {
+        baseColor 0.12549 0.12549 0.12549
+        emissiveColor 0.0745098 0.0745098 0.0745098
+      }
+      geometry Cylinder {
+        height 0.15
+        radius 0.06
+      }
+    }
+  ]
+  name "solid(7)"
+}
+Solid {
+  translation -0.12 -0.39 0
+  children [
+    Shape {
+      appearance PBRAppearance {
+        baseColor 0.12549 0.12549 0.12549
+        emissiveColor 0.0745098 0.0745098 0.0745098
+      }
+      geometry Cylinder {
+        height 0.15
+        radius 0.06
+      }
+    }
+  ]
+  name "solid(6)"
+}
+Solid {
+  translation -0.63 -0.67 0
+  children [
+    Shape {
+      appearance PBRAppearance {
+        baseColor 0.12549 0.12549 0.12549
+        emissiveColor 0.0745098 0.0745098 0.0745098
+      }
+      geometry Cylinder {
+        height 0.15
+        radius 0.06
+      }
+    }
+  ]
+  name "solid(3)"
+}
+E-puck {
+  hidden position_0_0 -3.100560934592311e-08
+  hidden position_0_1 -3.1005630829225894e-08
+  hidden linearVelocity_0 -8.516392298767046e-15 4.137172285000442e-09 7.43621342280676e-11
+  hidden angularVelocity_0 1.3761364827146564e-07 1.2416113664940832e-13 -6.114849799183832e-14
+  hidden rotation_1 0 -1 0 2.9802322387695313e-08
+  hidden linearVelocity_1 2.717268159544296e-12 3.4492100133818044e-09 7.435966640778147e-11
+  hidden angularVelocity_1 -1.724631926792221e-07 -5.382488007205867e-13 -5.730343263751586e-14
+  hidden rotation_2 0 -1 0 2.9802322387695313e-08
+  hidden linearVelocity_2 -2.7323604533461065e-12 3.4492132982798574e-09 7.436019592515248e-11
+  hidden angularVelocity_2 -1.7246336001927737e-07 1.0749332436595994e-13 -6.51209413489943e-14
+  translation -0.8800000000001662 0.870000000099091 -6.396200532074112e-05
+  rotation 2.3265234282664963e-09 -1.166805784176645e-10 -0.9999999999999999 1.5707953071796081
+  controller "epuck_controller"
+}
