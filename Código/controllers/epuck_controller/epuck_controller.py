@@ -50,7 +50,7 @@ SPEED_BASE        = 3.0
 SPEED_TURN        = 2.0   
 KP_ANGULAR        = 2.5   
 MAX_SPEED         = 6.28  
-ARRIVAL_THRESHOLD = 0.08  
+ARRIVAL_THRESHOLD = 0.01  
 OBSTACLE_THRESHOLD = 150 # Incrementado para evitar falsos positivos por paredes lejanas
 TOLERANCIA_ANGULAR = 0.05 # (ej. 0.05 rads son ~2.8 grados)
 LOG_FILE = "ruta_log.csv"
@@ -150,6 +150,8 @@ class Odometria:
         if self._prev_izq is None:
             self._prev_izq = enc_izq_val
             self._prev_der = enc_der_val
+            self.vel_izq = 0.0
+            self.vel_der = 0.0
             return
 
         d_izq = (enc_izq_val - self._prev_izq) * WHEEL_RADIUS
@@ -157,6 +159,10 @@ class Odometria:
 
         self._prev_izq = enc_izq_val
         self._prev_der = enc_der_val
+
+        dt = TIME_STEP / 1000.0 
+        self.vel_izq = d_izq / dt
+        self.vel_der = d_der / dt
 
         d_centro = (d_der + d_izq) / 2.0
         d_theta  = (d_der - d_izq) / WHEEL_DISTANCE
@@ -256,12 +262,21 @@ while robot.step(TIME_STEP) != -1:
         print("✅  META ALCANZADA.")
         break
 
+    # 1. Estimate current linear speed (average of both wheels in m/s)
+    vel_izq_actual = enc_izq.getValue() # Note: To be perfectly accurate, you'd need the derivative of the encoder values over TIME_STEP.
+    # A simpler way in Webots is to just use the commanded velocity if we assume no slip:
+    current_speed = SPEED_BASE * WHEEL_RADIUS if not evadiendo else 0.0 
+    
+    # 2. Calculate dynamic threshold
+    lookahead_time = 0.5 # Seconds to look ahead
+    dynamic_threshold = ARRIVAL_THRESHOLD + (lookahead_time * abs(current_speed))
+
     wx, wy = waypoints[wp_idx]
     dist_wp = distancia(xr, yr, wx, wy)
 
-    # Comprobación de llegada al waypoint
-    if dist_wp < ARRIVAL_THRESHOLD:
-        print(f"   WP {wp_idx:>3}/{len(waypoints)-1}  ({wx:+.3f}, {wy:+.3f})  alcanzado")
+    # 3. Comprobación de llegada al waypoint con umbral dinámico
+    if dist_wp < dynamic_threshold:
+        print(f"   WP {wp_idx:>3}/{len(waypoints)-1}  ({wx:+.3f}, {wy:+.3f})  alcanzado (umbral: {dynamic_threshold:.3f}m)")
         wp_idx   += 1
         evadiendo = False
         continue
