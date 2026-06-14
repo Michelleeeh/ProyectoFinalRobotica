@@ -22,23 +22,25 @@ else:
     from controller import Robot
     robot = Robot()
 
-from mapa import cargar_mapa
+from mapa import cargar_mapa, MAPA_SIMPLE, MAPA_COMPLEJO
 from astar import astar
+
+MAPA_SELECCIONADO = MAPA_SIMPLE 
 
 # ═══════════════════════════════════════════════════════════════════════════════
 # PARÁMETROS DEL MAPA Y MUNDO (Arena 4x4m)
 # ═══════════════════════════════════════════════════════════════════════════════
 
-# Arreglar esto para que lo tome directo del mapa, pero por ahora lo dejamos hardcodeado para asegurar consistencia con el mapa definido en mapa.py
-INICIO_GRID = (0, 0)   # x = -1.875, y = 1.875
-META_GRID   = (15, 15) # x = 1.875, y = -1.875
-
 TIME_STEP  = 64          
 CELL_SIZE  = 0.25      # Cada celda mide 0.25m (16x16 celdas = 4x4 metros)
 
-# Bordes físicos del mapa 4x4
-ORIGEN_X   = -2.0        # Borde izquierdo
-ORIGEN_Y   =  2.0        # Borde superior (+Y)
+# Calcula dimensiones y bordes físicos (ORIGEN_X y ORIGEN_Y)
+num_filas = len(MAPA_SELECCIONADO)
+num_cols  = len(MAPA_SELECCIONADO[0])
+
+# El centro es 0,0. Por lo tanto, el borde es la mitad de la longitud total (teniendo en cuenta que los mapas están hechos de esa forma)
+ORIGEN_X = -(num_cols * CELL_SIZE) / 2.0  
+ORIGEN_Y =  (num_filas * CELL_SIZE) / 2.0 
 
 WHEEL_RADIUS   = 0.0205  
 WHEEL_DISTANCE = 0.0576  
@@ -95,7 +97,22 @@ robot.step(TIME_STEP)
 # PLANIFICACIÓN GLOBAL (A*)
 # ═══════════════════════════════════════════════════════════════════════════════
 
-grid, _, _ = cargar_mapa()
+INICIO_GRID = None
+META_GRID = None
+
+for f, fila_str in enumerate(MAPA_SELECCIONADO):
+    for c, char in enumerate(fila_str):
+        if char == 'S':
+            INICIO_GRID = (f, c)
+        elif char == 'M':
+            META_GRID = (f, c)
+
+# Validar que el mapa efectivamente tenía una 'S' y una 'M'
+if INICIO_GRID is None or META_GRID is None:
+    print(" Error: No se encontró 'S' (Inicio) o 'M' (Meta) en MAPA_SELECCIONADO.")
+    exit(1)
+
+grid, _, _ = cargar_mapa(MAPA_SELECCIONADO)
 
 ruta = astar(grid, INICIO_GRID, META_GRID)
 
