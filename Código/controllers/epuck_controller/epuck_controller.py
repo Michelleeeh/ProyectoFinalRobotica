@@ -18,6 +18,9 @@ if DEBUG:
     from lineadebug import dibujar_ruta_3d
     from controller import Supervisor
     robot = Supervisor()
+    
+    node = robot.getSelf()
+    rot = node.getField("rotation")
 else:
     from controller import Robot
     robot = Robot()
@@ -48,12 +51,13 @@ INITIAL_HEADING = 0.0    # 0 radianes apunta hacia +X (Este)
 
 SPEED_BASE        = 3.0   
 SPEED_TURN        = 2.0   
-KP_ANGULAR        = 2.5   
+KP_ANGULAR        = 2.0   
 MAX_SPEED         = 6.28  
-ARRIVAL_THRESHOLD = 0.01  
+ARRIVAL_THRESHOLD = 0.005
 OBSTACLE_THRESHOLD = 160 # Incrementado para evitar falsos positivos por paredes lejanas
 TOLERANCIA_ANGULAR = 0.05 # (ej. 0.05 rads son ~2.8 grados)
-LOOKAHEAD_TIME = 0.5 # Segundos para calcular un umbral dinámico de llegada basado en la velocidad actual
+LOOKAHEAD_TIME = 0.1 # Segundos para calcular un umbral dinámico de llegada basado en la velocidad actual
+LOOKAHEAD_DISTANCE = 0.05   # metros
 LOG_FILE = "ruta_log.csv"
 
 # ═══════════════════════════════════════════════════════════════════════════════
@@ -85,6 +89,12 @@ enc_izq = robot.getDevice("left wheel sensor")
 enc_der = robot.getDevice("right wheel sensor")
 enc_izq.enable(TIME_STEP)
 enc_der.enable(TIME_STEP)
+
+gyro = robot.getDevice("gyro")
+gyro.enable(TIME_STEP)
+print("Tipo gyro:", type(gyro))
+print("Lookup table:", gyro.getLookupTable())
+print("Sampling:", gyro.getSamplingPeriod())
 
 sensores = []
 for i in range(8):
@@ -220,12 +230,14 @@ def hay_obstaculo_frontal(lec):
 
 log_rows = []
 
-def registrar(t_sim, x, y, theta, wp_idx, error_dist, evadiendo):
+def registrar(t_sim, x, y, theta_encoder, theta_gyro, theta_kalman, wp_idx, error_dist, evadiendo):
     log_rows.append({
         "t_sim_ms"  : t_sim,
         "x"         : round(x, 4),
         "y"         : round(y, 4),
-        "theta_deg" : round(math.degrees(theta), 2),
+        "theta_encoder": round(math.degrees(theta_encoder), 2),
+        "theta_gyro": round(math.degrees(theta_gyro), 2),
+        "theta_kalman": round(math.degrees(theta_kalman), 2),
         "waypoint"  : wp_idx,
         "error_m"   : round(error_dist, 4),
         "evadiendo" : int(evadiendo),
@@ -233,7 +245,7 @@ def registrar(t_sim, x, y, theta, wp_idx, error_dist, evadiendo):
 
 def guardar_log():
     with open(LOG_FILE, "w", newline="") as f:
-        campos = ["t_sim_ms", "x", "y", "theta_deg", "waypoint", "error_m", "evadiendo"]
+        campos = ["t_sim_ms", "x", "y", "theta_encoder","theta_gyro", "theta_kalman" ,"waypoint", "error_m", "evadiendo"]
         w = csv.DictWriter(f, fieldnames=campos)
         w.writeheader()
         w.writerows(log_rows)
@@ -247,6 +259,12 @@ wp_idx        = 1
 t_sim         = 0      
 evadiendo     = False
 dir_evasion   = 1 # 1 para izquierda, -1 para derecha
+theta_gyro = INITIAL_HEADING
+theta_kalman = INITIAL_HEADING
+
+P = 1.0
+Q = 0.01
+R = 0.05
 
 print("\n  Iniciando navegación…\n")
 
@@ -254,10 +272,64 @@ while robot.step(TIME_STEP) != -1:
     t_sim += TIME_STEP
 
     odo.actualizar(enc_izq.getValue(), enc_der.getValue())
+    
+    dt = TIME_STEP / 1000.0
+    
+    gyro_values = gyro.getValues()
+    
+    gyro_scale = 13.315805 / 100000.0
+    omega_z = gyro_values[2] * gyro_scale
+    
+    theta_gyro += omega_z * dt
+    
+    # Predicción Kalman
+    theta_kalman += omega_z * dt
+    P += Q
+    
+    # Normalizar predicción
+    theta_kalman = math.atan2(
+        math.sin(theta_kalman),
+        math.cos(theta_kalman)
+    )
+    
+    theta_gyro = math.atan2(
+        math.sin(theta_gyro),
+        math.cos(theta_gyro)
+    )
+    
     xr, yr = odo.pos
-    theta  = odo.theta
+    theta = odo.theta
+    
+    # Corrección Kalman usando encoder
+    K = P / (P + R)
+    
+    theta_kalman = theta_kalman + K * (theta - theta_kalman)
+    
+    P = (1 - K) * P
+    
+    # Normalizar resultado final
+    theta_kalman = math.atan2(
+        math.sin(theta_kalman),
+        math.cos(theta_kalman)
+    )
+    
+    ALPHA = 0.98
+    
+    theta_fusion = math.atan2(
+        math.sin(ALPHA * theta_gyro + (1 - ALPHA) * theta),
+        math.cos(ALPHA * theta_gyro + (1 - ALPHA) * theta)
+    )
+    
+    if t_sim % 1000 < TIME_STEP:
+        print(
+            f"Enc={math.degrees(theta):.1f}° "
+            f"Gyro={math.degrees(theta_gyro):.1f}° "
+            f"Fusion={math.degrees(theta_fusion):.1f}° "
+            f"Kalman={math.degrees(theta_kalman):.1f}°"
+        )
+    
     lecturas = leer_sensores()
-
+   
     if wp_idx >= len(waypoints):
         detener()
         print("✅  META ALCANZADA.")
@@ -275,15 +347,23 @@ while robot.step(TIME_STEP) != -1:
 
     # Utiliza un umbral dinámico que considera la velocidad actual para determinar si el waypoint está "alcanzado". Esto ayuda a evitar oscilaciones cerca del waypoint cuando se mueve a alta velocidad.
     if dist_wp < dynamic_threshold:
+    
+        print(
+            f"\nWP {wp_idx}: "
+            f"pos=({xr:.4f},{yr:.4f}) "
+            f"objetivo=({wx:.4f},{wy:.4f}) "
+            f"error={dist_wp:.4f}"
+        )
+    
         print(f"   WP {wp_idx:>3}/{len(waypoints)-1}  ({wx:+.3f}, {wy:+.3f})  alcanzado (umbral: {dynamic_threshold:.3f}m)")
         wp_idx   += 1
         evadiendo = False
         continue
 
-    registrar(t_sim, xr, yr, theta, wp_idx, dist_wp, evadiendo)
+    registrar(t_sim, xr, yr, theta, theta_gyro, theta_kalman, wp_idx, dist_wp, evadiendo)
 
     # "Fuerza de atracción" hacia el waypoint para la evasión reactiva
-    error_ang = angulo_hacia(xr, yr, theta, wx, wy)
+    error_ang = angulo_hacia(xr, yr, theta_kalman, wx, wy)
 
     # ══════════════════════════════════════════════════════════════
     # EVASIÓN REACTIVA INTELIGENTE
@@ -327,8 +407,6 @@ while robot.step(TIME_STEP) != -1:
 
     set_velocidades(velocidad_base_actual - correccion,
                     velocidad_base_actual + correccion)
-
-    
 
 detener()
 guardar_log()
