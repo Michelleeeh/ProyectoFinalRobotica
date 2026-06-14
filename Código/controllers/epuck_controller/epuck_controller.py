@@ -26,7 +26,7 @@ from mapa import cargar_mapa, MAPA_SIMPLE, MAPA_COMPLEJO
 from astar import astar
 
 MAPA_SELECCIONADO = MAPA_SIMPLE 
-
+ 
 # ═══════════════════════════════════════════════════════════════════════════════
 # PARÁMETROS DEL MAPA Y MUNDO (Arena 4x4m)
 # ═══════════════════════════════════════════════════════════════════════════════
@@ -51,8 +51,9 @@ SPEED_TURN        = 2.0
 KP_ANGULAR        = 2.5   
 MAX_SPEED         = 6.28  
 ARRIVAL_THRESHOLD = 0.01  
-OBSTACLE_THRESHOLD = 150 # Incrementado para evitar falsos positivos por paredes lejanas
+OBSTACLE_THRESHOLD = 160 # Incrementado para evitar falsos positivos por paredes lejanas
 TOLERANCIA_ANGULAR = 0.05 # (ej. 0.05 rads son ~2.8 grados)
+LOOKAHEAD_TIME = 0.5 # Segundos para calcular un umbral dinámico de llegada basado en la velocidad actual
 LOG_FILE = "ruta_log.csv"
 
 # ═══════════════════════════════════════════════════════════════════════════════
@@ -131,7 +132,7 @@ print(f"Ruta generada : {len(ruta)} nodos")
 waypoints = [celda_a_mundo(f, c) for f, c in ruta]
 
 if DEBUG:
-    # Asegúrate de que la función de debug soporte X, Y y Z=0 si estás usando ENU
+    # Dibuja la ruta planificada en el entorno Webots
     dibujar_ruta_3d(robot, waypoints) 
 
 # ═══════════════════════════════════════════════════════════════════════════════
@@ -262,19 +263,17 @@ while robot.step(TIME_STEP) != -1:
         print("✅  META ALCANZADA.")
         break
 
-    # 1. Estimate current linear speed (average of both wheels in m/s)
-    vel_izq_actual = enc_izq.getValue() # Note: To be perfectly accurate, you'd need the derivative of the encoder values over TIME_STEP.
-    # A simpler way in Webots is to just use the commanded velocity if we assume no slip:
+
+    vel_izq_actual = enc_izq.getValue() 
     current_speed = SPEED_BASE * WHEEL_RADIUS if not evadiendo else 0.0 
     
-    # 2. Calculate dynamic threshold
-    lookahead_time = 0.5 # Seconds to look ahead
-    dynamic_threshold = ARRIVAL_THRESHOLD + (lookahead_time * abs(current_speed))
+    
+    dynamic_threshold = ARRIVAL_THRESHOLD + (LOOKAHEAD_TIME * abs(current_speed))
 
     wx, wy = waypoints[wp_idx]
     dist_wp = distancia(xr, yr, wx, wy)
 
-    # 3. Comprobación de llegada al waypoint con umbral dinámico
+    # Utiliza un umbral dinámico que considera la velocidad actual para determinar si el waypoint está "alcanzado". Esto ayuda a evitar oscilaciones cerca del waypoint cuando se mueve a alta velocidad.
     if dist_wp < dynamic_threshold:
         print(f"   WP {wp_idx:>3}/{len(waypoints)-1}  ({wx:+.3f}, {wy:+.3f})  alcanzado (umbral: {dynamic_threshold:.3f}m)")
         wp_idx   += 1
@@ -283,33 +282,48 @@ while robot.step(TIME_STEP) != -1:
 
     registrar(t_sim, xr, yr, theta, wp_idx, dist_wp, evadiendo)
 
-    # Comportamiento Reactivo: Evasión de Obstáculos
-    # Se puede mejorar, no ha sido el enfoque por ahora
-    if hay_obstaculo_frontal(lecturas):
-        if not evadiendo:
-            evadiendo = True
-            print(f"⚠️  Obstáculo detectado — t={t_sim} ms  pos=({xr:+.3f}, {yr:+.3f})")
-            # Decidir dirección de giro basado en el lado más congestionado
-            izq_val = sum(lecturas[5:7])
-            der_val = sum(lecturas[1:3])
-            dir_evasion = -1 if izq_val < der_val else 1
-            
-        # Rotar sobre su propio eje hasta que el frente esté libre
-        set_velocidades(-SPEED_TURN * dir_evasion, SPEED_TURN * dir_evasion)
-        continue
-    else:
-        # Si no hay nada al frente, desactivamos evasión
-        evadiendo = False
+    # "Fuerza de atracción" hacia el waypoint para la evasión reactiva
+    error_ang = angulo_hacia(xr, yr, theta, wx, wy)
 
-    # Seguimos el waypoint
-    error_ang  = angulo_hacia(xr, yr, theta, wx, wy)
+    # ══════════════════════════════════════════════════════════════
+    # EVASIÓN REACTIVA INTELIGENTE
+    # ══════════════════════════════════════════════════════════════
+
+    """
+    Utilizamos una especie de "Magnetismo" hacia el waypoint para decidir la dirección de evasión cuando hay un obstáculo frontal.
+    Esto hace que el robot intente evadir en la dirección que lo acerque más al waypoint, en lugar de simplemente girar a la izquierda o derecha
+    sin considerar el objetivo final.
+    """
+    fuerza_izq = lecturas[5] + lecturas[6] + lecturas[7]
+    fuerza_der = lecturas[0] + lecturas[1] + lecturas[2]
     
-    if abs(error_ang) > TOLERANCIA_ANGULAR:
-        velocidad_base_actual = 0.0  # Frena por completo y rota sobre su propio eje
-    else:
-        velocidad_base_actual = SPEED_BASE
+    if hay_obstaculo_frontal(lecturas):
+        print(f"⚠️  Obstáculo detectado — t={t_sim} ms  pos=({xr:+.3f}, {yr:+.3f})")
+        # Reducir velocidad base para no chocar mientras maniobra
+        velocidad_base_actual = SPEED_BASE * 0.3 
         
-    correccion = KP_ANGULAR * error_ang
+        # Determinar de qué lado está más cerca el obstáculo
+        diferencia_fuerza = fuerza_izq - fuerza_der
+        
+        # Umbral de 200 para considerar que el obstáculo está "justo al frente"
+        if abs(diferencia_fuerza) < 200: 
+            # OBSTÁCULO FRONTAL CENTRADO: Usamos el waypoint para decidir el giro
+            if error_ang > 0:
+                correccion = SPEED_TURN  # El WP está a la izq, evadimos por la izq
+            else:
+                correccion = -SPEED_TURN # El WP está a la der, evadimos por la der
+                
+        elif diferencia_fuerza > 0:
+            # OBSTÁCULO A LA IZQUIERDA: Girar a la derecha
+            correccion = -SPEED_TURN
+        else:
+            # OBSTÁCULO A LA DERECHA: Girar a la izquierda
+            correccion = SPEED_TURN
+            
+    else:
+        # Frena suavemente la velocidad base si el giro hacia el WP es muy brusco
+        velocidad_base_actual = SPEED_BASE * max(0.0, 1.0 - abs(error_ang))
+        correccion = KP_ANGULAR * error_ang
 
     set_velocidades(velocidad_base_actual - correccion,
                     velocidad_base_actual + correccion)
