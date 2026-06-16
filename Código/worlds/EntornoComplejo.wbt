@@ -12,8 +12,8 @@ EXTERNPROTO "https://raw.githubusercontent.com/cyberbotics/webots/R2025a/project
 WorldInfo {
 }
 Viewpoint {
-  orientation -0.5728826729423125 0.6022675002349991 0.5559490095351883 2.083760432437075
-  position -0.02946563685110909 0.27820558244112437 8.723108908889555
+  orientation -0.5651788749231798 0.6061936457193794 0.5595552727211284 2.060520524179717
+  position -0.05284259949955497 0.14981043721520523 8.868889025952335
 }
 Solid {
   translation -1.89 1.87 0
@@ -275,7 +275,7 @@ WoodenBox {
   size 0.2 0.3 0.2
 }
 PlasticCrate {
-  translation 0.34043 0.873179 0
+  translation 0.37043 0.873179 0
   rotation 0 0 1 -5.307179586466759e-06
   size 0.2 0.2 0.3
 }
@@ -323,5 +323,6 @@ PlasticCrate {
 E-puck {
   translation -1.88 1.86 -6.3962e-05
   controller "epuck_controller"
+  customData "EntornoComplejo"
   supervisor TRUE
 }

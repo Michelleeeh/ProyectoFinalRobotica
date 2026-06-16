@@ -62,7 +62,7 @@ Shape {
 Shape {
 }
 Solid {
-  translation -0.88 0.87 0
+  translation -0.88 0.88 0
   children [
     Shape {
       appearance PBRAppearance {
@@ -171,11 +171,8 @@ Solid {
   name "solid(3)"
 }
 E-puck {
-  hidden position_0_0 -3.100560934592311e-08
-  hidden position_0_1 -3.1005630829225894e-08
-  hidden rotation_1 0 -1 0 2.9802322387695313e-08
-  hidden rotation_2 0 -1 0 2.9802322387695313e-08
-  translation -0.8800000000001662 0.870000000099091 -6.396200532074112e-05
+  translation -0.87 0.87 -6.3962e-05
   controller "epuck_controller"
+  customData "EntornoSimple"
   supervisor TRUE
 }
