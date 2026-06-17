@@ -11,24 +11,16 @@ import math
 import csv
 import os
 
-DEBUG = True
+from controller import Supervisor
+robot = Supervisor()
+node = robot.getSelf()
 
-# Si DEBUG es True, se importará la función de dibujo de ruta y se usará Supervisor para visualizar la ruta planificada.
-if DEBUG:
-    from lineadebug import dibujar_ruta_3d
-    from controller import Supervisor
-    robot = Supervisor()
-    
-    node = robot.getSelf()
-    rot = node.getField("rotation")
-else:
-    from controller import Robot
-    robot = Robot()
-
-from mapa import cargar_mapa, MAPA_SIMPLE, MAPA_COMPLEJO
+from lineadebug import dibujar_ruta_3d, checkDebug
+from mapa import cargar_mapa, leerMapa, leerInicioMeta
 from astar import astar
 
-MAPA_SELECCIONADO = MAPA_SIMPLE 
+MAPA_SELECCIONADO = leerMapa(robot)
+DEBUG = checkDebug(node) 
  
 # ═══════════════════════════════════════════════════════════════════════════════
 # PARÁMETROS DEL MAPA Y MUNDO (Arena 4x4m)
@@ -53,8 +45,8 @@ SPEED_BASE        = 3.0
 SPEED_TURN        = 2.0   
 KP_ANGULAR        = 2.0   
 MAX_SPEED         = 6.28  
-ARRIVAL_THRESHOLD = 0.005
-OBSTACLE_THRESHOLD = 160 # Incrementado para evitar falsos positivos por paredes lejanas
+ARRIVAL_THRESHOLD = 0.025
+OBSTACLE_THRESHOLD = 550 # Incrementado para evitar falsos positivos por paredes lejanas
 TOLERANCIA_ANGULAR = 0.05 # (ej. 0.05 rads son ~2.8 grados)
 LOOKAHEAD_TIME = 0.1 # Segundos para calcular un umbral dinámico de llegada basado en la velocidad actual
 LOOKAHEAD_DISTANCE = 0.05   # metros
@@ -92,9 +84,6 @@ enc_der.enable(TIME_STEP)
 
 gyro = robot.getDevice("gyro")
 gyro.enable(TIME_STEP)
-print("Tipo gyro:", type(gyro))
-print("Lookup table:", gyro.getLookupTable())
-print("Sampling:", gyro.getSamplingPeriod())
 
 sensores = []
 for i in range(8):
@@ -107,16 +96,18 @@ robot.step(TIME_STEP)
 # ═══════════════════════════════════════════════════════════════════════════════
 # PLANIFICACIÓN GLOBAL (A*)
 # ═══════════════════════════════════════════════════════════════════════════════
-
 INICIO_GRID = None
-META_GRID = None
+META_GRID   = None
 
-for f, fila_str in enumerate(MAPA_SELECCIONADO):
-    for c, char in enumerate(fila_str):
-        if char == 'S':
-            INICIO_GRID = (f, c)
-        elif char == 'M':
-            META_GRID = (f, c)
+if DEBUG:
+    INICIO_GRID, META_GRID = leerInicioMeta(robot, MAPA_SELECCIONADO, CELL_SIZE)
+else:
+    for f, fila_str in enumerate(MAPA_SELECCIONADO):
+        for c, char in enumerate(fila_str):
+            if char == 'S':
+                INICIO_GRID = (f, c)
+            elif char == 'M':
+                META_GRID = (f, c)
 
 # Validar que el mapa efectivamente tenía una 'S' y una 'M'
 if INICIO_GRID is None or META_GRID is None:
@@ -157,7 +148,7 @@ class Odometria:
         self._prev_izq = None
         self._prev_der = None
 
-    def actualizar(self, enc_izq_val, enc_der_val):
+    def actualizar(self, enc_izq_val, enc_der_val, theta_fusionado=None):
         if self._prev_izq is None:
             self._prev_izq = enc_izq_val
             self._prev_der = enc_der_val
@@ -177,15 +168,16 @@ class Odometria:
 
         d_centro = (d_der + d_izq) / 2.0
         d_theta  = (d_der - d_izq) / WHEEL_DISTANCE
-
-        mid_theta  = self.theta + d_theta / 2.0
         
-        self.x    += d_centro * math.cos(mid_theta)
-        self.y    += d_centro * math.sin(mid_theta) 
-        
-        # Normalizar theta
+        # Mantenemos el theta de los encoders solo para alimentar al filtro de Kalman
         self.theta = math.atan2(math.sin(self.theta + d_theta),
                                 math.cos(self.theta + d_theta))
+
+        # EL FIX: Si el loop principal nos pasa el theta del gyro, lo usamos para la posición.
+        angulo_uso = theta_fusionado if theta_fusionado is not None else self.theta
+        
+        self.x    += d_centro * math.cos(angulo_uso)
+        self.y    += d_centro * math.sin(angulo_uso)
 
     @property
     def pos(self):
@@ -259,6 +251,7 @@ wp_idx        = 1
 t_sim         = 0      
 evadiendo     = False
 dir_evasion   = 1 # 1 para izquierda, -1 para derecha
+estado_pivote = False 
 theta_gyro = INITIAL_HEADING
 theta_kalman = INITIAL_HEADING
 
@@ -271,7 +264,7 @@ print("\n  Iniciando navegación…\n")
 while robot.step(TIME_STEP) != -1:
     t_sim += TIME_STEP
 
-    odo.actualizar(enc_izq.getValue(), enc_der.getValue())
+    odo.actualizar(enc_izq.getValue(), enc_der.getValue(), theta_kalman)
     
     dt = TIME_STEP / 1000.0
     
@@ -320,14 +313,6 @@ while robot.step(TIME_STEP) != -1:
         math.cos(ALPHA * theta_gyro + (1 - ALPHA) * theta)
     )
     
-    if t_sim % 1000 < TIME_STEP:
-        print(
-            f"Enc={math.degrees(theta):.1f}° "
-            f"Gyro={math.degrees(theta_gyro):.1f}° "
-            f"Fusion={math.degrees(theta_fusion):.1f}° "
-            f"Kalman={math.degrees(theta_kalman):.1f}°"
-        )
-    
     lecturas = leer_sensores()
    
     if wp_idx >= len(waypoints):
@@ -338,42 +323,42 @@ while robot.step(TIME_STEP) != -1:
 
     vel_izq_actual = enc_izq.getValue() 
     current_speed = SPEED_BASE * WHEEL_RADIUS if not evadiendo else 0.0 
-    
-    
-    dynamic_threshold = ARRIVAL_THRESHOLD + (LOOKAHEAD_TIME * abs(current_speed))
 
+    # ══════════════════════════════════════════════════════════════
+    # ACTUALIZACIÓN DE WAYPOINT (Lookahead)
+    # ══════════════════════════════════════════════════════════════
+    
     wx, wy = waypoints[wp_idx]
     dist_wp = distancia(xr, yr, wx, wy)
+    es_ultimo_wp = (wp_idx == len(waypoints) - 1)
 
-    # Utiliza un umbral dinámico que considera la velocidad actual para determinar si el waypoint está "alcanzado". Esto ayuda a evitar oscilaciones cerca del waypoint cuando se mueve a alta velocidad.
-    if dist_wp < dynamic_threshold:
-    
-        print(
-            f"\nWP {wp_idx}: "
-            f"pos=({xr:.4f},{yr:.4f}) "
-            f"objetivo=({wx:.4f},{wy:.4f}) "
-            f"error={dist_wp:.4f}"
-        )
-    
-        print(f"   WP {wp_idx:>3}/{len(waypoints)-1}  ({wx:+.3f}, {wy:+.3f})  alcanzado (umbral: {dynamic_threshold:.3f}m)")
-        wp_idx   += 1
-        evadiendo = False
-        continue
+    umbral_actual = 0.03 if es_ultimo_wp else 0.12 
 
+    if dist_wp < umbral_actual:
+        if es_ultimo_wp:
+            detener()
+            print("✅ META ALCANZADA.")
+            break
+        else:
+            print(f"   WP {wp_idx:>3}/{len(waypoints)-1} alcanzado")
+            wp_idx += 1
+            evadiendo = False
+            estado_pivote = False  # Resetear el estado de giro forzado al cambiar de WP
+            continue
     registrar(t_sim, xr, yr, theta, theta_gyro, theta_kalman, wp_idx, dist_wp, evadiendo)
 
     # "Fuerza de atracción" hacia el waypoint para la evasión reactiva
     error_ang = angulo_hacia(xr, yr, theta_kalman, wx, wy)
 
-    # ══════════════════════════════════════════════════════════════
-    # EVASIÓN REACTIVA INTELIGENTE
-    # ══════════════════════════════════════════════════════════════
-
+    # ════════════════
+    # EVASIÓN REACTIVA 
+    # ════════════════
     """
     Utilizamos una especie de "Magnetismo" hacia el waypoint para decidir la dirección de evasión cuando hay un obstáculo frontal.
     Esto hace que el robot intente evadir en la dirección que lo acerque más al waypoint, en lugar de simplemente girar a la izquierda o derecha
     sin considerar el objetivo final.
     """
+
     fuerza_izq = lecturas[5] + lecturas[6] + lecturas[7]
     fuerza_der = lecturas[0] + lecturas[1] + lecturas[2]
     
@@ -401,9 +386,36 @@ while robot.step(TIME_STEP) != -1:
             correccion = SPEED_TURN
             
     else:
-        # Frena suavemente la velocidad base si el giro hacia el WP es muy brusco
-        velocidad_base_actual = SPEED_BASE * max(0.0, 1.0 - abs(error_ang))
-        correccion = KP_ANGULAR * error_ang
+        # ══════════════════════════════════════════════════════════════
+        # NAVEGACIÓN ESTÁNDAR (Lookahead)
+        # ══════════════════════════════════════════════════════════════
+        
+        UMBRAL_PIVOTE = 0.45 
+        
+        # Bloqueo estricto solo aplicable si estamos persiguiendo el último WP
+        if es_ultimo_wp and dist_wp < 0.10:
+            estado_pivote = False
+            velocidad_base_actual = SPEED_BASE * 0.5  
+            factor_distancia = dist_wp / 0.10 
+            correccion = KP_ANGULAR * error_ang * factor_distancia
+            correccion = max(-SPEED_TURN * 0.4, min(SPEED_TURN * 0.4, correccion))
+            
+        else:
+            # Histéresis normal para el resto de la ruta
+            if abs(error_ang) > UMBRAL_PIVOTE:
+                estado_pivote = True
+            elif abs(error_ang) < 0.15:
+                estado_pivote = False
+                
+            if estado_pivote:
+                # Pivote puro si la esquina es demasiado aguda
+                velocidad_base_actual = 0.0
+                KP_PIVOTE = 2.5
+                correccion = max(-SPEED_TURN, min(SPEED_TURN, KP_PIVOTE * error_ang))
+            else:
+                # Navegación fluida y rápida
+                velocidad_base_actual = max(0.0, SPEED_BASE * math.cos(error_ang))
+                correccion = KP_ANGULAR * error_ang
 
     set_velocidades(velocidad_base_actual - correccion,
                     velocidad_base_actual + correccion)
