@@ -61,7 +61,7 @@ Shape {
 }
 Shape {
 }
-Solid {
+DEF bloqueInicio Solid {
   translation -0.88 0.88 0
   children [
     Shape {
@@ -74,8 +74,9 @@ Solid {
       }
     }
   ]
+  name "bloqueInicio"
 }
-Solid {
+DEF bloqueMeta Solid {
   translation 0.88 -0.88 0
   children [
     Shape {
@@ -88,7 +89,7 @@ Solid {
       }
     }
   ]
-  name "solid(1)"
+  name "bloqueMeta"
 }
 Solid {
   translation -0.89 0.13 0
