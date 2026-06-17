@@ -314,7 +314,7 @@ Siga estos pasos para descargar el proyecto de forma manual sin utilizar la term
 * **Python 3.X:** Configurado en las variables de entorno del sistema (`PATH`).
 
 ### 8.2 Descarga del Proyecto
-* **Descargar ZIP:** Entre al enlace del repositorio en GitHub (`https://github.com/TheFanking/Laboratorio-2`).
+* **Descargar ZIP:** Entre al enlace del repositorio en GitHub (`https://github.com/Michelleeeh/ProyectoFinalRobotica`).
 * **Extraer Archivos:** Haga clic en el botón verde **Code** (esquina superior derecha), seleccione **Download ZIP** y descomprima el archivo en cualquier carpeta de su computador.
 
 ### 8.3 Ejecución en Webots
