@@ -70,6 +70,14 @@ El segundo escenario de simulación presenta un aumento significativo en la dens
   * **Muros Alargados y Cajas:** Bloques de color madera dispuestos estratégicamente para formar callejones sin salida, pasillos largos y esquinas cerradas. Esto fuerza al robot a realizar múltiples cambios de dirección en zigzag.
   * **Postes Cilíndricos:** Columnas circulares de color gris oscuro distribuidas a lo largo del mapa que bloquean las intersecciones y reducen el espacio transitable en los giros, elevando el nivel de exigencia para evitar colisiones.
 
+A continuación se adjunta un link como ejemplo de ejecución de nuestro controlador en base al mapa anteriormente mencionado
+
+<a href="https://www.youtube.com/watch?v=P30xHKlR0dE" target="_blank">
+<img src="https://img.youtube.com/vi/P30xHKlR0dE/mqdefault.jpg"
+alt="Watch the video" width="560" height="315" />
+</a>
+
+
 ---
 ## 5 Algoritmo implementado
 
