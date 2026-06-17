@@ -299,6 +299,7 @@ En lugar de un gráfico XY común, un histograma de la tasa de cambio de posici�
 <p align="center">
   <img src="https://github.com/user-attachments/assets/d5fa768a-5277-4e1e-8bbd-0b5078438167" width="550" alt="Gráfico de Histograma de Velocidad" />
 </p>
+
 #### Interpretación
 El histograma de velocidades valida cuantitativamente que la conducción del e-puck no se comportó de forma lineal constante, sino de manera adaptativa. La alta densidad de frecuencias concentrada en el límite superior derecho (cerca de los 0.06 m/s) representa al robot operando de manera eficiente a velocidad crucero en los pasillos rectos despejados.
 
