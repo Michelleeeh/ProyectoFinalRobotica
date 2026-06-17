@@ -253,3 +253,96 @@ INICIO
 FIN ALGORITMO
 ```
 ---
+## 7 Resultados obtenidos y métricas de desempeño
+El análisis del desempeño del sistema de navegación autónoma híbrido se realizó mediante la evaluación de los datos empíricos recolectados en tiempo real por el controlador. A continuación, se presentan las métricas e interpretaciones cuantitativas y cualitativas de la prueba definitiva ejecutada en el **Entorno Complejo** (grilla de $16 \times 16$ celdas, con un paso de tiempo continuo $dt = 64\text{ ms}$).
+
+### 7.1. Métricas Cuantitativas de Rendimiento Global
+
+Para evaluar objetivamente la eficiencia temporal, cinemática y la robustez del estimador estocástico del e-puck, se consolidaron los siguientes indicadores clave de rendimiento (KPIs) basados en el tiempo de simulación real registrado hasta consolidar la detención en la meta:
+
+| Métrica de Desempeño | Valor Obtenido | Unidad / Detalle |
+| :--- | :---: | :--- |
+| **Tiempo total hasta la meta** | **123.39** | Segundos de simulación acumulados (`123392 ms`) |
+| **Longitud de la ruta planificada ($A^*$)** | 7.25 | Metros teóricos libres de colisión |
+| **Longitud aproximada de la trayectoria real**| 6.778 | Metros físicos recorridos en la arena |
+| **Velocidad media operacional** | 0.00549 | Metros por segundo ($\text{m/s}$) reales |
+| **Desvío (*Drift*) máximo del Giroscopio** | 0.7 | Grados ($^\circ$) de error máximo acumulado |
+| **Error residual final de orientación (Kalman)**| 0.011 | Grados ($^\circ$) de error en el punto de destino |
+| **Número de colisiones o roces registrados** | 0 | Eventos detectados por impacto físico |
+| **Cantidad de waypoints globales procesados** | 30 | Nodos de la ruta principal completados |.11.11.11
+
+### 7.2 Graficos y analisis
+A continuacion se realizará diferentes graficos para evaluar el desempeño todo esto basado en los datos obtenidos de **ruta_log**
+
+### 7.2.1 Error de Distancia
+Este gráfico muestra cómo cambia la columna error_m a lo largo del tiempo. Es el más fácil de explicar visualmente porque se comporta en "dientes de sierra".Histograma de Velocidad (Comportamiento Adaptativo)
+<p align="center">
+  <img src="https://github.com/user-attachments/assets/4af8f031-da0b-4867-92b2-6348e8396312" width="550" alt="Gráfico de Error de Distancia" />
+</p>
+
+#### Interpretación
+Este gráfico representa el pulso de la navegación del robot. Cada pico hacia arriba es el instante exacto donde el e-puck cambia de manera secuencial al siguiente de sus 30 waypoints globales, mientras que la bajada suave y continua muestra la acción del controlador proporcional arrastrando con éxito al vehículo hacia cada objetivo parcial. 
+
+El hecho de que la curva sea limpia, decreciente y libre de perturbaciones demuestra que el sistema nunca osciló ni dudó en su rumbo. Se logró una trayectoria fluida gracias a que la sintonización del umbral dinámico (*lookahead*) evitó frenazos intermitentes o detenciones innecesarias al negociar las esquinas del laberinto.
+
+### 7.2.2 Comportamiento Estocástico de la Orientación (Fusión de Sensores)
+Este gráfico pone frente a frente el ángulo medido por el giroscopio crudo (theta_gyro), las ruedas (theta_encoder) y tu filtro estocástico (theta_kalman).
+<p align="center">
+  <img src="https://github.com/user-attachments/assets/4e97a7e9-5cb3-437e-a73f-61cc3c8ca5cf" width="550" alt="Gráfico de Comparación de Orientación" />
+</p>
+
+#### Interpretación
+Aquí evaluamos el cerebro matemático del robot. A lo largo de los 123 segundos de viaje, el giroscopio crudo (línea roja) acumula ruido físico por integrar la velocidad en el tiempo, desviándose de la realidad. Por otro lado, las ruedas (línea verde) pueden patinar. La línea azul es nuestro Filtro de Kalman. Al calcular la ganancia óptima basándose en las covarianzas, rescata al robot eliminando la deriva inercial, logrando que al final del trayecto el error residual sea de apenas $0.11∘$, manteniendo al e-puck perfectamente cuadrado con el laberinto.
+
+### 7.2.3 Histograma de Velocidad (Comportamiento Adaptativo)
+En lugar de un gráfico XY común, un histograma de la tasa de cambio de posición te permite ver de forma muy didáctica cuántas veces y con qué frecuencia el robot varió su velocidad para proteger la mecánica
+<p align="center">
+  <img src="https://github.com/user-attachments/assets/d5fa768a-5277-4e1e-8bbd-0b5078438167" width="550" alt="Gráfico de Histograma de Velocidad" />
+</p>
+#### Interpretación
+El histograma de velocidades valida cuantitativamente que la conducción del e-puck no se comportó de forma lineal constante, sino de manera adaptativa. La alta densidad de frecuencias concentrada en el límite superior derecho (cerca de los 0.06 m/s) representa al robot operando de manera eficiente a velocidad crucero en los pasillos rectos despejados.
+
+Por otro lado, la dispersión de barras hacia el extremo izquierdo mapea las desaceleraciones controladas introducidas por la ley de control cinemático. Cuando el error angular incrementaba en las esquinas del laberinto complejo, el algoritmo redujo de forma autónoma el avance lineal para priorizar la rotación pura sobre su eje de simetría. Esto penalizó la velocidad media operacional reduciéndola a 0.0549 m/s, pero aseguró una navegación con 0 colisiones, mitigando los esfuerzos mecánicos por inercia destructiva en los actuadores reales.
+---
+## 8. Instrucciones para Ejecutar la Simulación (Descarga Directa)
+
+Siga estos pasos para descargar el proyecto de forma manual sin utilizar la terminal:
+
+### 8.1 Requisitos Previos
+* **Webots:** Instalado en su última versión estable.
+* **Python 3.X:** Configurado en las variables de entorno del sistema (`PATH`).
+
+### 8.2 Descarga del Proyecto
+* **Descargar ZIP:** Entre al enlace del repositorio en GitHub (`https://github.com/TheFanking/Laboratorio-2`).
+* **Extraer Archivos:** Haga clic en el botón verde **Code** (esquina superior derecha), seleccione **Download ZIP** y descomprima el archivo en cualquier carpeta de su computador.
+
+### 8.3 Ejecución en Webots
+* **Cargar el Mundo:** Inicie Webots, diríjase a `File` > `Open World...` y abra el archivo `.wbt` del escenario deseado (Simple o Complejo) dentro de la carpeta descomprimida.
+* **Asignar Controlador:** En el panel izquierdo de Webots, expanda las propiedades del robot **e-puck** y verifique que el campo `controller` apunte al script de Python del proyecto.
+* **Solución de errores:** Si Webots no detecta el entorno, vaya a `Tools` > `Preferences` > `Python Command` y pegue la ruta del ejecutable de su Python local.
+* **Simular:** Presione el botón **Play** o **Fast** en la barra superior para iniciar la navegación autónoma con el Filtro de Kalman. Las salidas de telemetría se desplegarán en la consola inferior en tiempo real.
+
+
+
+## 9. Conclusión
+El desarrollo de este proyecto permitió evaluar con éxito el desempeño de un **Sistema de Navegación Autónoma Híbrido** en la plataforma robótica diferencial *E-puck*. La integración de las tres capas de software demostró que la navegación precisa en entornos complejos no depende de un solo componente, sino de la sinergia y el trabajo en equipo de todo el sistema:
+
+1. **Planificación Inteligente ($A^*$):** El algoritmo global demostró una alta eficiencia espacial al resolver de forma inmediata un laberinto denso, trazando una ruta óptima de 30 waypoints que garantizó márgenes de seguridad perfectos, logrando una navegación limpia con **0 colisiones**.
+2. **Cerebro Estocástico robusto (Filtro de Kalman):** Ante una misión prolongada de más de dos minutos (**123.39 segundos**), el Filtro de Kalman cumplió exitosamente su rol analítico. Logró mitigar la deriva inercial (*drift*) acumulada por el giroscopio, estabilizando la orientación con un error residual final despreciable de apenas **$0.11^\circ$**.
+3. **Control Adaptativo y Fluido:** Los gráficos y la telemetría validaron que el acoplamiento entre el controlador proporcional y el umbral dinámico (*lookahead*) permitió un movimiento continuo. Al "recortar las esquinas" de forma parabólica para conservar la energía cinética y frenar de manera autónoma en los virajes cerrados, la trayectoria real ejecutada (**6.77 m**) optimizó la distancia teórica de la grilla (**7.25 m**), protegiendo además los actuadores de desgastes mecánicos.
+
+En conclusión, el sistema híbrido implementado demostró una alta robustez y madurez de ingeniería, resolviendo la transición entre el mundo matemático ideal de las matrices y las restricciones físicas continuas del entorno simulado de Webots de manera sobresaliente.
+
+### 9.1. Limitaciones del Sistema Implementado
+
+1. **Restricción de Movimiento Ortogonal en la Planificación ($A^*$):** La grilla discreta actual limita la expansión de nodos a 4 direcciones cardinales. Esto fuerza al algoritmo a trazar trayectorias con geometría de "escalera" basadas en la distancia Manhattan. Aunque el controlador continuo suaviza estos tramos, la ruta original nace con una penalización de distancia teórica innecesaria.
+2. **Dependencia de un Entorno Estático:** El planificador global genera una ruta fija al inicio de la simulación. El sistema carece de un algoritmo de replanificación en tiempo real (*Dynamic Replanning*). Si un obstáculo apareciera de forma imprevista bloqueando por completo un pasillo, el robot dependería únicamente de la capa reactiva local, aumentando el riesgo de quedar atrapado en callejones sin salida locales.
+3. **Ausencia de Control de Velocidad Curvilíneo Avanzado:** La ley de control actual reduce la velocidad lineal en función del error angular mediante un esquema proporcional simple. Aunque es estable, no modela de forma exacta las aceleraciones centrípetas ni las restricciones dinámicas del motor, lo que limita la velocidad crucero máxima que la plataforma podría alcanzar de forma segura en las transiciones rectas.
+
+
+
+### 9.2. Mejoras Futuras Propuestas
+
+1. **Evolución a Grillas de 8 Direcciones o Mapas Continuos:** Se propone expandir la conectividad del algoritmo $A^*$ a 8 vecindades (incluyendo diagonales mediante distancia Euclidiana o Chebyshev) o implementar algoritmos basados en muestreo continuo como **RRT* (Rapidly-exploring Random Trees)**. Esto permitiría generar rutas globales inherentemente más cortas y fluidas desde la fase de planificación.
+2. **Implementación de Ventana Dinámica (DWA - Dynamic Window Approach):** Para resolver la navegación en entornos dinámicos, se sugiere acoplar el planificador global con un generador de trayectorias locales como DWA. Este enfoque evalúa el espacio de velocidades del robot en cada ciclo de control, permitiendo esquivar obstáculos móviles respetando los límites de aceleración y tracción física de los motores.
+3. **Control de Seguimiento Mediante Algoritmo Pure Pursuit:** Reemplazar el controlador proporcional simple por una estrategia de **Pure Pursuit** o control por **Modelo Predictivo (MPC)**. Al definir un punto de mira adelante (*lookahead point*) que se desplace continuamente sobre la trayectoria curva, el robot optimizaría el cálculo cinemático inverso, reduciendo a valores cercanos a cero el remanente del error de distancia (`error_m`) en las curvas y permitiendo velocidades operacionales más altas.
