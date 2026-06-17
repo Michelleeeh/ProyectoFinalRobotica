@@ -12,10 +12,10 @@ EXTERNPROTO "https://raw.githubusercontent.com/cyberbotics/webots/R2025a/project
 WorldInfo {
 }
 Viewpoint {
-  orientation -0.5651788749231798 0.6061936457193794 0.5595552727211284 2.060520524179717
-  position -0.05284259949955497 0.14981043721520523 8.868889025952335
+  orientation -0.5773502691896258 0.5773502691896258 0.5773502691896258 2.0944
+  position 0.0001537372001018771 9.057076330370659e-07 8.870316185209939
 }
-Solid {
+DEF bloqueInicio Solid {
   translation -1.89 1.87 0
   rotation 0.7071067811865475 0 0.7071067811865475 0
   children [
@@ -29,8 +29,9 @@ Solid {
       }
     }
   ]
+  name "bloqueInicio"
 }
-Solid {
+DEF bloqueMeta Solid {
   translation 1.89 -1.88 0
   rotation 0.7071067811865475 0 0.7071067811865475 0
   children [
@@ -44,7 +45,7 @@ Solid {
       }
     }
   ]
-  name "solid(1)"
+  name "bloqueMeta"
 }
 TexturedBackground {
 }
@@ -301,14 +302,14 @@ PlasticCrate {
   color 0 0.333333 1
 }
 PlasticCrate {
-  translation -1.17052 -1.17008 0
+  translation -1.20052 -1.17008 0
   rotation 0 0 1 -5.307179586466759e-06
   name "plastic crate(4)"
   size 0.2 0.2 0.3
   color 0 0.333333 1
 }
 PlasticCrate {
-  translation -1.15052 -1.48008 0
+  translation -1.21052 -1.48008 0
   rotation 0 0 1 -5.307179586466759e-06
   name "plastic crate(3)"
   size 0.3 0.3 0.3
