@@ -301,9 +301,8 @@ En lugar de un gráfico XY común, un histograma de la tasa de cambio de posici�
 </p>
 
 #### Interpretación
-El histograma de velocidades valida cuantitativamente que la conducción del e-puck no se comportó de forma lineal constante, sino de manera adaptativa. La alta densidad de frecuencias concentrada en el límite superior derecho (cerca de los 0.06 m/s) representa al robot operando de manera eficiente a velocidad crucero en los pasillos rectos despejados.
+El histograma de velocidades valida cuantitativamente que la conducción del e-puck no se comportó de forma lineal constante, sino de manera adaptativa. La alta densidad de frecuencias concentrada en el límite superior derecho (cerca de los 0.06 m/s) representa al robot operando de manera eficiente a velocidad crucero en los pasillos rectos despejados.Por otro lado, la dispersión de barras hacia el extremo izquierdo mapea las desaceleraciones controladas introducidas por la ley de control cinemático. Cuando el error angular incrementaba en las esquinas del laberinto complejo, el algoritmo redujo de forma autónoma el avance lineal para priorizar la rotación pura sobre su eje de simetría. Esto penalizó la velocidad media operacional reduciéndola a 0.0549 m/s, pero aseguró una navegación con 0 colisiones, mitigando los esfuerzos mecánicos por inercia destructiva en los actuadores reales.
 
-Por otro lado, la dispersión de barras hacia el extremo izquierdo mapea las desaceleraciones controladas introducidas por la ley de control cinemático. Cuando el error angular incrementaba en las esquinas del laberinto complejo, el algoritmo redujo de forma autónoma el avance lineal para priorizar la rotación pura sobre su eje de simetría. Esto penalizó la velocidad media operacional reduciéndola a 0.0549 m/s, pero aseguró una navegación con 0 colisiones, mitigando los esfuerzos mecánicos por inercia destructiva en los actuadores reales.
 ---
 ## 8. Instrucciones para Ejecutar la Simulación (Descarga Directa)
 
