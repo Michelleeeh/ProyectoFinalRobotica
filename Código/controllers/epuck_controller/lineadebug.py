@@ -8,7 +8,6 @@ def dibujar_ruta_3d(supervisor, waypoints):
     if not waypoints:
         return
 
-    # Altura en Z ligeramente mayor a 0 para evitar "Z-fighting" (parpadeo gráfico) con el piso.
     Z_FLOOR = 0.02  
 
     coord_parts = []
@@ -55,3 +54,18 @@ def dibujar_ruta_3d(supervisor, waypoints):
     print(f"   Nodos        : {len(waypoints)}")
     print(f"   Inicio (VRML): X={p0x:+.3f}  Y={p0y:+.3f}  Z={Z_FLOOR}")
     print(f"   Meta   (VRML): X={pNx:+.3f}  Y={pNy:+.3f}  Z={Z_FLOOR}")
+
+def checkDebug(node):
+    try:
+        supervisor_field = node.getField("supervisor")
+        DEBUG = supervisor_field is not None and supervisor_field.getSFBool()
+    except Exception:
+        DEBUG = False
+
+    if DEBUG:
+        rot = node.getField("rotation")
+        print("[DEBUG] Modo supervisor activo — visualización de ruta habilitada.")
+    else:
+        print("[INFO] Modo supervisor inactivo — visualización deshabilitada.")
+    
+    return DEBUG
